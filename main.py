@@ -13,6 +13,8 @@ import sys
 import argparse
 from renderer_ogl import OpenGLRenderer, GaussianRenderBase
 
+import time
+
 
 # Add the directory containing main.py to the Python path
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -45,10 +47,14 @@ def impl_glfw_init():
         print("Could not initialize OpenGL context")
         exit(1)
 
+    # glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 4)
+    # glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
+    # glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
+    # glfw.window_hint(glfw.OPENGL_FORWARD_COMPAT, gl.GL_TRUE)
+    
     glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 4)
     glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
-    glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
-    # glfw.window_hint(glfw.OPENGL_FORWARD_COMPAT, gl.GL_TRUE)
+    glfw.window_hint(glfw.CONTEXT_CREATION_API, glfw.EGL_CONTEXT_API)
 
     # Create a windowed mode window and its OpenGL context
     global window
@@ -115,7 +121,7 @@ def window_resize_callback(window, width, height):
 def main():
     global g_camera, g_renderer, g_renderer_list, g_renderer_idx, g_scale_modifier, g_auto_sort, \
         g_show_control_win, g_show_help_win, g_show_camera_win, \
-        g_render_mode, g_render_mode_tables
+        g_render_mode, g_render_mode_tables, g_data
         
     imgui.create_context()
     if args.hidpi:
@@ -143,12 +149,14 @@ def main():
         g_renderer_idx = BACKEND_CUDA
 
     g_renderer = g_renderer_list[g_renderer_idx]
+    g_data = dict(np.load("./models/DGSs/params.npz"))
 
     # gaussian data
-    gaussians = util_gau.naive_gaussian()
+    gaussians = util_gau.load_gaussian_data_from_npz(g_data, 0)
     update_activated_renderer_state(gaussians)
     
     # settings
+    index = 0
     while not glfw.window_should_close(window):
         glfw.poll_events()
         impl.process_inputs()
@@ -156,11 +164,32 @@ def main():
         
         gl.glClearColor(0, 0, 0, 1.0)
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+        
+        print("Current Frame idx : ", index)
+        
+        if index < 149:
+            index += 1
+        else:
+            index = 0
 
+        load_start_time = time.time()
+        gaussians = util_gau.load_gaussian_data_from_npz(g_data, index)
+        load_end_time = time.time()
+        
+        update_start_time = time.time()
+        update_activated_renderer_state(gaussians)
+        update_end_time = time.time()
+        
         update_camera_pose_lazy()
         update_camera_intrin_lazy()
         
+        redering_start_time = time.time()
         g_renderer.draw()
+        rendering_end_time = time.time()
+        
+        print("Load Time : ", load_end_time - load_start_time)
+        print("Update Time : ", update_end_time - update_start_time)
+        print("Rendering Time : ", rendering_end_time - redering_start_time)
 
         # imgui ui
         if imgui.begin_main_menu_bar():

@@ -20,6 +20,21 @@ class GaussianData:
     def sh_dim(self):
         return self.sh.shape[-1]
 
+def load_gaussian_data_from_npz(g_data, index):
+    gau_xyz = g_data['means3D'][index]
+    gau_rot = g_data['unnorm_rotations'][index]
+    gau_rot = gau_rot / np.linalg.norm(gau_rot, axis=1, keepdims=True)
+    gau_s = np.exp(g_data['log_scales'])
+    gau_c = g_data['rgb_colors'][index]
+    gau_c = (gau_c - 0.5) / 0.28209
+    gau_a = g_data['logit_opacities']
+    return GaussianData(
+        gau_xyz,
+        gau_rot,
+        gau_s,
+        gau_a,
+        gau_c
+    )
 
 def naive_gaussian():
     gau_xyz = np.array([
