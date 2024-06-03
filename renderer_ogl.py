@@ -12,6 +12,7 @@ except:
 _sort_buffer_xyz = None
 _sort_buffer_gausid = None  # used to tell whether gaussian is reloaded
 
+# TODO: Implement sorting with openGL compute shader
 def _sort_gaussian_cpu(gaus, view_mat):
     xyz = np.asarray(gaus.xyz)
     view_mat = np.asarray(view_mat)

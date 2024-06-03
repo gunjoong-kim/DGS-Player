@@ -106,7 +106,7 @@ def update_camera_intrin_lazy():
 
 def update_activated_renderer_state(gaus: util_gau.GaussianData):
     g_renderer.update_gaussian_data(gaus)
-    g_renderer.sort_and_update(g_camera)
+    g_renderer.sort_and_update(g_camera) # bottleneck is here
     g_renderer.set_scale_modifier(g_scale_modifier)
     g_renderer.set_render_mod(g_render_mode - 3)
     g_renderer.update_camera_pose(g_camera)
