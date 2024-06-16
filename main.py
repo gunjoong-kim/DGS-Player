@@ -149,10 +149,10 @@ def main():
         g_renderer_idx = BACKEND_CUDA
 
     g_renderer = g_renderer_list[g_renderer_idx]
-    g_data = dict(np.load("./models/DGSs/params.npz"))
+    #g_data = dict(np.load("./models/DGSs/params.npz"))
 
     # gaussian data
-    gaussians = util_gau.load_gaussian_data_from_npz(g_data, 0)
+    gaussians = util_gau.load_gaussian_data_from_server(0)
     update_activated_renderer_state(gaussians)
     
     # settings
@@ -172,24 +172,14 @@ def main():
         else:
             index = 0
 
-        load_start_time = time.time()
-        gaussians = util_gau.load_gaussian_data_from_npz(g_data, index)
-        load_end_time = time.time()
+        gaussians = util_gau.load_gaussian_data_from_server(index)
         
-        update_start_time = time.time()
         update_activated_renderer_state(gaussians)
-        update_end_time = time.time()
         
         update_camera_pose_lazy()
         update_camera_intrin_lazy()
-        
-        redering_start_time = time.time()
+
         g_renderer.draw()
-        rendering_end_time = time.time()
-        
-        print("Load Time : ", load_end_time - load_start_time)
-        print("Update Time : ", update_end_time - update_start_time)
-        print("Rendering Time : ", rendering_end_time - redering_start_time)
 
         # imgui ui
         if imgui.begin_main_menu_bar():

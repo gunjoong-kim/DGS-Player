@@ -1,6 +1,8 @@
 import numpy as np
 from plyfile import PlyData
 from dataclasses import dataclass
+import requests
+from io import BytesIO
 
 @dataclass
 class GaussianData:
@@ -19,6 +21,50 @@ class GaussianData:
     @property 
     def sh_dim(self):
         return self.sh.shape[-1]
+    
+global g_opacities
+global g_scales
+
+import time
+
+def load_gaussian_data_from_server(index):
+    url = f"http://css5.yonsei.ac.kr:8502/gunjoong/volumetric_test/frames/frame_{index}.npz"
+    get_start = time.time()
+    response = requests.get(url)
+    get_end = time.time()
+    
+    print(f"Get time: {get_end - get_start}")
+    
+    if response.status_code == 200:
+        # Use BytesIO to wrap the binary content
+        with BytesIO(response.content) as data_io:
+            # Load data as a numpy object from the BytesIO stream
+            data = np.load(data_io, allow_pickle=True)
+            # Convert npz structure to a dictionary immediately to avoid any open file issues
+            data_dict = {key: data[key] for key in data.files}
+        # Process the loaded data
+    if index == 0:
+        global g_opacities
+        global g_scales
+        g_opacities = data_dict['logit_opacities']
+        g_scales = data_dict['log_scales']
+
+    gau_xyz = data_dict['means3D']
+    gau_rot = data_dict['unnorm_rotations']
+    gau_rot = gau_rot / np.linalg.norm(gau_rot, axis=1, keepdims=True)
+    gau_s = np.exp(g_scales)
+    gau_c = data_dict['rgb_colors']
+    gau_c = (gau_c - 0.5) / 0.28209
+    gau_a = g_opacities
+    return GaussianData(
+        gau_xyz,
+        gau_rot,
+        gau_s,
+        gau_a,
+        gau_c
+    )
+    
+        
 
 def load_gaussian_data_from_npz(g_data, index):
     gau_xyz = g_data['means3D'][index]
